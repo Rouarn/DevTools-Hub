@@ -1,9 +1,18 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { NButton, NSpace } from 'naive-ui'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+const handleClick = () => {
+  router.replace('/')
+}
+</script>
 
 <template>
   <div class="h-100px pos-relative">
     <section
-      class="w-full h-70%! z-40 rounded-3xl outline-white/10 md:rounded-xl bg-black md:bg-[#000000C4] backdrop-blur-sm md:transition-all top-6 px-30"
+      class="w-full h-70%! z-40 rounded-3xl outline-white/10 md:rounded-xl md:transition-all top-6 px-10"
       style="
         transition-timing-function: cubic-bezier(0.165, 0.84, 0.44, 1);
         transition-duration: 300ms;
@@ -28,13 +37,20 @@
           />
         </div>
         <NSpace class="h-full">
-          <NButton class="text-white"> 主页 </NButton>
-          <NButton class="text-white"> 工具页 </NButton>
-          <NButton class="text-white"> 关于我们 </NButton>
+          <NButton class="text-white" :bordered="false" @click="handleClick"> 主页 </NButton>
+          <NButton class="text-white" :bordered="false"> 工具页 </NButton>
+          <NButton class="text-white" :bordered="false"> 关于我们 </NButton>
         </NSpace>
       </NSpace>
     </section>
   </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+section {
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease-in-out;
+}
+</style>

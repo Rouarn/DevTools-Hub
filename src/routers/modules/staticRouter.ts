@@ -22,6 +22,22 @@ export const staticRouter: RouteRecordRaw[] = [
           title: '首页',
         },
       },
+      {
+        path: '/jstots',
+        name: 'jstots',
+        component: () => import('@/views/jstots/index.vue'),
+        meta: {
+          title: 'js转ts',
+        },
+      },
+      {
+        path: '/jstojson',
+        name: 'jstojson',
+        component: () => import('@/views/jstojson/index.vue'),
+        meta: {
+          title: 'js转json',
+        },
+      },
     ],
   },
 ]

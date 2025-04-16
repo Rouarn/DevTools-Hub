@@ -35,6 +35,7 @@ export default defineConfigWithVueTs(
           ignores: ['/^icon-/'],
         },
       ],
+      '@typescript-eslint/no-explicit-any': 'off', // 关闭不允许使用 any 的规则
     },
   },
 )

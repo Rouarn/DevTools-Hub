@@ -16,4 +16,8 @@ const router = useRouter()
 
 <style scoped lang="scss">
 @use './index.scss' as *;
+
+.mx-30 {
+  margin: 0 !important;
+}
 </style>
