@@ -4,6 +4,7 @@ import { dateEnUS, dateZhCN, enUS, zhCN } from 'naive-ui'
 import { computed } from 'vue'
 import { NConfigProvider, darkTheme } from 'naive-ui'
 import type { WatermarkProps } from 'naive-ui'
+import AppProvider from '@/components/common/app-provider.vue'
 
 defineOptions({
   name: 'App',

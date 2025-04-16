@@ -68,7 +68,9 @@ import { javascript } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
 import { CopyOutline, RefreshOutline, CodeWorkingOutline, TrashOutline } from '@vicons/ionicons5'
-import { NIcon, NButton, NCard, NLayoutContent } from 'naive-ui'
+import { NIcon, NButton, NCard, NLayoutContent, useMessage } from 'naive-ui'
+
+const message = useMessage()
 
 // 编辑器实例
 const inputEditorRef = ref<HTMLElement>()
@@ -132,10 +134,10 @@ const convert = (): void => {
     const result = generateTSInterface(obj)
     setEditorContent(outputEditor, result)
 
-    window.$message.success('转换成功!')
+    message.success('转换成功!')
     hasInitialContent.value = true
   } catch (e) {
-    window.$message.error((e as Error).message)
+    message.error((e as Error).message)
   }
 }
 
@@ -231,7 +233,7 @@ const copyInput = async (): Promise<void> => {
 const copyOutput = async (): Promise<void> => {
   const output = getEditorContent(outputEditor)
   if (!output.trim()) {
-    window.$message.warning('没有可复制的内容')
+    message.warning('没有可复制的内容')
     return
   }
   await copyToClipboard(output, 'TypeScript 类型已复制')
@@ -240,9 +242,9 @@ const copyOutput = async (): Promise<void> => {
 const copyToClipboard = async (text: string, successMessage: string): Promise<void> => {
   try {
     await navigator.clipboard.writeText(text)
-    window.$message.success(successMessage)
+    message.success(successMessage)
   } catch (err) {
-    window.$message.error('复制失败: ' + (err as Error).message)
+    message.error('复制失败: ' + (err as Error).message)
   }
 }
 
@@ -251,7 +253,7 @@ const clearAll = (): void => {
   setEditorContent(inputEditor, '')
   setEditorContent(outputEditor, '')
   hasInitialContent.value = false
-  window.$message.info('已清空所有内容')
+  message.info('已清空所有内容')
 }
 </script>
 
