@@ -16,10 +16,13 @@
 
 /* 文字多行省略号 */
 .mle {
-  display: -webkit-box;
+  display: -webkit-box; /* 兼容 WebKit 内核 */
+  display: box; /* 标准属性 */
   overflow: hidden;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  box-orient: vertical; /* 标准属性 */
+  -webkit-line-clamp: 2; /* WebKit 内核专用 */
+  line-clamp: 2; /* 标准属性 */
 }
 
 /* 文字多了自动換行 */
@@ -46,6 +49,7 @@
 }
 /*---滚动条大小--*/
 ::-webkit-scrollbar {
+  display: none;
   width: 8px;
   height: 8px;
 }

@@ -39,7 +39,11 @@ const tools = reactive([
     >
 
     <NScrollbar x-scrollable>
-      <NFlex inline class="w-full whitespace-nowrap pl-5px" :wrap="false">
+      <NFlex
+        inline
+        class="w-full whitespace-nowrap pl-5px overflow-hidden cursor-pointer"
+        :wrap="false"
+      >
         <div
           class="tools-card"
           v-for="(tool, index) in tools"

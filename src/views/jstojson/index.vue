@@ -1,6 +1,7 @@
 <template>
   <NLayoutContent
-    class="flex-1 p-4"
+    class="flex-1 p-4 bg-transparent tools-card"
+    content-class="bg-transparent"
     :content-style="{
       display: 'flex',
       flexDirection: 'column',
@@ -14,61 +15,80 @@
         </template>
         转换
       </NButton>
-      <NButton secondary @click="clearAll">
+      <NButton @click="clearAll" type="info">
         <template #icon>
           <NIcon :component="TrashOutline" />
         </template>
         清空
       </NButton>
-    </div>
-    <div class="grid grid-cols-2 gap-4 flex-1">
-      <!-- 输入面板 -->
-      <NCard class="h-full" content-class="h-full flex flex-col p-0">
-        <template #header>
-          <div class="flex justify-between items-center">
-            <div class="flex items-center gap-2">
-              <NIcon :component="CodeWorkingOutline" />
-              <span>JavaScript 对象</span>
-            </div>
-            <NButton text @click="copyInput">
-              <template #icon>
-                <NIcon :component="CopyOutline" />
-              </template>
-            </NButton>
-          </div>
-        </template>
-        <div ref="inputEditorRef" class="flex-1 overflow-hidden"></div>
-      </NCard>
 
-      <!-- 输出面板 -->
-      <NCard class="h-full" content-class="h-full flex flex-col p-0">
-        <template #header>
-          <div class="flex justify-between items-center">
-            <div class="flex items-center gap-2">
-              <NIcon :component="CodeWorkingOutline" />
-              <span>TypeScript 类型</span>
-            </div>
-            <NButton text @click="copyOutput">
-              <template #icon>
-                <NIcon :component="CopyOutline" />
-              </template>
-            </NButton>
-          </div>
-        </template>
-        <div ref="outputEditorRef" class="flex-1 overflow-hidden"></div>
-      </NCard>
+      <!-- 回到顶部按钮 -->
+      <NFlex justify="center" align="center">
+        <NButton type="primary" circle size="small" @click="scrollbarRef.scrollTo({ top: 0 })">
+          <template #icon>
+            <NIcon :component="ArrowUpCircleOutline" />
+          </template>
+        </NButton>
+      </NFlex>
     </div>
+
+    <NScrollbar content-class="h-full" ref="scrollbarRef">
+      <div class="grid grid-cols-2 gap-4 flex-1 h-full">
+        <!-- 输入面板 -->
+        <NCard class="h-full bg-transparent tools-card" content-class="h-full flex flex-col p-0">
+          <template #header>
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-2">
+                <NIcon color="#fff" :component="CodeWorkingOutline" />
+                <span class="color-#fff">JavaScript 对象</span>
+              </div>
+              <NButton text @click="copyInput">
+                <template #icon>
+                  <NIcon color="#fff" :component="CopyOutline" />
+                </template>
+              </NButton>
+            </div>
+          </template>
+          <div ref="inputEditorRef" class="flex-1 overflow-hidden"></div>
+        </NCard>
+
+        <!-- 输出面板 -->
+        <NCard class="h-full bg-transparent tools-card" content-class="h-full flex flex-col p-0">
+          <template #header>
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-2">
+                <NIcon color="#fff" :component="CodeWorkingOutline" />
+                <span class="color-#fff">JSON 对象</span>
+              </div>
+              <NButton text @click="copyOutput">
+                <template #icon>
+                  <NIcon color="#fff" :component="CopyOutline" />
+                </template>
+              </NButton>
+            </div>
+          </template>
+          <div ref="outputEditorRef" class="flex-1 overflow-hidden"></div>
+        </NCard>
+      </div>
+    </NScrollbar>
   </NLayoutContent>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { EditorView } from '@codemirror/view'
+import { EditorView, keymap } from '@codemirror/view'
 import { javascript } from '@codemirror/lang-javascript'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { basicSetup } from 'codemirror'
-import { CopyOutline, RefreshOutline, CodeWorkingOutline, TrashOutline } from '@vicons/ionicons5'
-import { NIcon, NButton, NCard, NLayoutContent, useMessage } from 'naive-ui'
+import {
+  CopyOutline,
+  RefreshOutline,
+  CodeWorkingOutline,
+  TrashOutline,
+  ArrowUpCircleOutline,
+} from '@vicons/ionicons5'
+import { NIcon, NButton, NCard, NLayoutContent, useMessage, NScrollbar } from 'naive-ui'
+import { defaultKeymap } from '@codemirror/commands'
 
 const message = useMessage()
 
@@ -78,6 +98,7 @@ const outputEditorRef = ref<HTMLElement>()
 let inputEditor: EditorView | null = null
 let outputEditor: EditorView | null = null
 const hasInitialContent = ref(false)
+const scrollbarRef = ref<any>()
 
 // 初始化编辑器
 onMounted(() => {
@@ -87,6 +108,7 @@ onMounted(() => {
       basicSetup,
       javascript(),
       oneDark,
+      keymap.of([...defaultKeymap, { key: 'Mod-Enter', run: () => (convert(), true) }]),
       EditorView.lineWrapping,
       EditorView.updateListener.of((update) => {
         if (update.docChanged && !hasInitialContent.value) {
@@ -131,8 +153,8 @@ const convert = (): void => {
     }
 
     const obj = parseInput(input)
-    const result = generateTSInterface(obj)
-    setEditorContent(outputEditor, result)
+    const jsonString = JSON.stringify(obj, null, 2)
+    setEditorContent(outputEditor, jsonString)
 
     message.success('转换成功!')
     hasInitialContent.value = true
@@ -145,7 +167,7 @@ const convert = (): void => {
 const parseInput = (input: string): any => {
   try {
     const cleanInput = input
-      .replace(/(['"])?([a-zA-Z0-9_]+)(['"])?:/g, '"$2":')
+      .replace(/(['"])?([a-zA-Z0-9_-]+)(['"])?:/g, '"$2":') // 允许匹配带连字符的属性名
       .replace(/,(\s*})/g, '$1')
 
     const fn = new Function(`return ${cleanInput}`)
@@ -160,70 +182,6 @@ const parseInput = (input: string): any => {
   }
 }
 
-// 生成TS接口
-const generateTSInterface = (obj: any, interfaceName = 'GeneratedType', depth = 1): string => {
-  let childInterfaces = ''
-  const indent = '  '.repeat(depth)
-
-  const processValue = (value: any, key: string): string => {
-    if (Array.isArray(value)) {
-      const elemType = value.length > 0 ? getType(value[0]) : 'any'
-      return `${elemType}[]`
-    }
-
-    if (typeof value === 'object' && value !== null) {
-      const nestedName = getInterfaceName(interfaceName, key)
-      childInterfaces += generateTSInterface(value, nestedName, depth + 1) + '\n\n'
-      return nestedName
-    }
-
-    return getType(value)
-  }
-
-  const fields = Object.entries(obj).map(([key, value]) => {
-    const type = processValue(value, key)
-    return `${indent}${formatKey(key)}: ${type};`
-  })
-
-  return (
-    childInterfaces +
-    `${'  '.repeat(depth - 1)}interface ${interfaceName} {\n${fields.join('\n')}\n${'  '.repeat(
-      depth - 1,
-    )}}`
-  )
-}
-
-// 辅助函数
-const getType = (value: any): string => {
-  if (value === null) return 'null'
-  if (value instanceof Date) return 'Date'
-
-  const typeMap: Record<string, string> = {
-    string: 'string',
-    number: 'number',
-    boolean: 'boolean',
-    undefined: 'undefined',
-  }
-  return typeMap[typeof value] || 'any'
-}
-
-const getInterfaceName = (parentName: string, key: string): string => {
-  const validKey = key.toString().replace(/[^a-zA-Z0-9]/g, '_')
-  return `${parentName}_${pascalCase(validKey)}`
-}
-
-const pascalCase = (str: string): string => {
-  if (!str) return 'Unknown'
-  return String(str)
-    .split(/_|-| /)
-    .map((word) => word[0].toUpperCase() + word.slice(1).toLowerCase())
-    .join('')
-}
-
-const formatKey = (key: string): string => {
-  return /^[a-zA-Z_$][\w$]*$/.test(key) ? key : `'${key}'`
-}
-
 // 复制功能
 const copyInput = async (): Promise<void> => {
   const input = getEditorContent(inputEditor)
@@ -236,7 +194,7 @@ const copyOutput = async (): Promise<void> => {
     message.warning('没有可复制的内容')
     return
   }
-  await copyToClipboard(output, 'TypeScript 类型已复制')
+  await copyToClipboard(output, 'JSON 内容已复制')
 }
 
 const copyToClipboard = async (text: string, successMessage: string): Promise<void> => {
@@ -257,23 +215,28 @@ const clearAll = (): void => {
 }
 </script>
 
-<style>
+<style lang="scss" scoped>
 /* 确保编辑器高度正确 */
-.cm-editor {
+:deep(.cm-editor) {
   height: 100%;
   font-family: 'Fira Code', 'Consolas', monospace;
   font-size: 14px;
   line-height: 1.5;
 }
 
-/* 暗色模式适配 */
-.n-config-provider {
+.tools-card {
   height: 100%;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-/* 编辑器容器样式 */
-.cm-editor-container {
-  height: 100%;
-  overflow: hidden;
+.n-card.n-card--bordered {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.color-#fff {
+  color: #fff;
 }
 </style>
