@@ -31,123 +31,46 @@
         </NButton>
       </NFlex>
     </div>
+
     <NScrollbar content-class="h-full" ref="scrollbarRef">
       <div class="grid grid-cols-2 gap-4 flex-1 h-full">
-        <!-- 输入面板 -->
-        <NCard class="h-full bg-transparent tools-card" content-class="h-full flex flex-col p-0">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <div class="flex items-center gap-2">
-                <NIcon color="#fff" :component="CodeWorkingOutline" />
-                <span class="color-#fff">JavaScript 对象</span>
-              </div>
-              <NButton text @click="copyInput">
-                <template #icon>
-                  <NIcon color="#fff" :component="CopyOutline" />
-                </template>
-              </NButton>
-            </div>
-          </template>
-          <div ref="inputEditorRef" class="flex-1 overflow-hidden"></div>
-        </NCard>
+        <CodeEditor
+          ref="inputEditorRef"
+          title="JavaScript 对象"
+          :editable="true"
+          language="javascript"
+          :onContentChange="handleInputChange"
+        />
 
-        <!-- 输出面板 -->
-        <NCard class="h-full bg-transparent tools-card" content-class="h-full flex flex-col p-0">
-          <template #header>
-            <div class="flex justify-between items-center">
-              <div class="flex items-center gap-2">
-                <NIcon color="#fff" :component="CodeWorkingOutline" />
-                <span class="color-#fff">TypeScript 类型</span>
-              </div>
-              <NButton text @click="copyOutput">
-                <template #icon>
-                  <NIcon color="#fff" :component="CopyOutline" />
-                </template>
-              </NButton>
-            </div>
-          </template>
-          <div ref="outputEditorRef" class="flex-1 overflow-hidden"></div>
-        </NCard>
+        <CodeEditor ref="outputEditorRef" title="TypeScript 类型" :editable="false" />
       </div>
     </NScrollbar>
   </NLayoutContent>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { EditorView, keymap } from '@codemirror/view'
-import { javascript } from '@codemirror/lang-javascript'
-import { oneDark } from '@codemirror/theme-one-dark'
-import { defaultKeymap } from '@codemirror/commands'
-import {
-  CopyOutline,
-  RefreshOutline,
-  CodeWorkingOutline,
-  TrashOutline,
-  ArrowUpCircleOutline,
-} from '@vicons/ionicons5'
-import { NIcon, NButton, NCard, NLayoutContent, useMessage, NScrollbar, NFlex } from 'naive-ui'
+import { ref } from 'vue'
+import { RefreshOutline, TrashOutline, ArrowUpCircleOutline } from '@vicons/ionicons5'
+import { NIcon, NButton, NLayoutContent, useMessage, NScrollbar, NFlex } from 'naive-ui'
+import CodeEditor from '@/components/common/code-editor.vue'
 
 const message = useMessage()
-
-// 编辑器实例
-const inputEditorRef = ref<HTMLElement>()
-const outputEditorRef = ref<HTMLElement>()
-let inputEditor: EditorView | null = null
-let outputEditor: EditorView | null = null
-const hasInitialContent = ref(false)
+const inputEditorRef = ref()
+const outputEditorRef = ref()
 const scrollbarRef = ref<any>()
-
-// 初始化编辑器
-onMounted(() => {
-  inputEditor = new EditorView({
-    doc: '',
-    extensions: [
-      javascript(),
-      oneDark,
-      keymap.of([...defaultKeymap, { key: 'Mod-Enter', run: () => (convert(), true) }]),
-      EditorView.lineWrapping,
-      EditorView.updateListener.of((update) => {
-        if (update.docChanged && !hasInitialContent.value) {
-          setTimeout(convert, 100)
-        }
-      }),
-    ],
-    parent: inputEditorRef.value!,
-  })
-
-  outputEditor = new EditorView({
-    doc: '',
-    extensions: [oneDark, EditorView.editable.of(false), EditorView.lineWrapping],
-    parent: outputEditorRef.value!,
-  })
-})
-
-// 获取编辑器内容
-const getEditorContent = (editor: EditorView | null): string => {
-  return editor?.state.doc.toString() || ''
-}
-
-// 设置编辑器内容
-const setEditorContent = (editor: EditorView | null, content: string): void => {
-  editor?.dispatch({
-    changes: {
-      from: 0,
-      to: editor.state.doc.length,
-      insert: content,
-    },
-  })
-}
+const hasInitialContent = ref(false)
 
 // 转换函数
 const convert = (): void => {
   try {
-    const input = getEditorContent(inputEditor)
-    if (!input.trim()) throw new Error('请输入有效的 JavaScript 对象')
+    const input = inputEditorRef.value?.getContent()
+    if (!input?.trim()) {
+      throw new Error('请输入有效的 JavaScript 对象')
+    }
 
     const obj = parseInput(input)
     const result = generateTSInterface(obj)
-    setEditorContent(outputEditor, result)
+    outputEditorRef.value?.setContent(result)
 
     message.success('转换成功!')
     hasInitialContent.value = true
@@ -166,7 +89,9 @@ const parseInput = (input: string): any => {
     const fn = new Function(`return ${cleanInput}`)
     const obj = fn()
 
-    if (typeof obj !== 'object' || obj === null) throw new Error('请输入有效的 JavaScript 对象')
+    if (typeof obj !== 'object' || obj === null) {
+      throw new Error('请输入有效的对象')
+    }
     return obj
   } catch (e) {
     throw new Error('解析失败: ' + (e as Error).message)
@@ -230,36 +155,17 @@ const getInterfaceName = (parentName: string, key: string): string => {
 
 const formatKey = (key: string): string => (/^[a-zA-Z_$][\w$]*$/.test(key) ? key : `'${key}'`)
 
-// 剪贴板操作
-const copyInput = async () => {
-  const input = getEditorContent(inputEditor)
-  if (!input) return message.warning('没有可复制的内容')
-  try {
-    await navigator.clipboard.writeText(input)
-    message.success('已复制 JavaScript 代码')
-  } catch (err) {
-    message.error('复制失败: ' + (err as Error).message)
-  }
-}
-
-const copyOutput = async () => {
-  const output = getEditorContent(outputEditor)
-  if (output) {
-    try {
-      await navigator.clipboard.writeText(output)
-      message.success('已复制 TypeScript 类型')
-    } catch (err) {
-      message.error('复制失败: ' + (err as Error).message)
-    }
-  } else {
-    message.warning('没有可复制的内容')
+// 处理输入变化
+const handleInputChange = () => {
+  if (!hasInitialContent.value) {
+    setTimeout(convert, 100)
   }
 }
 
 // 清空功能
-const clearAll = () => {
-  setEditorContent(inputEditor, '')
-  setEditorContent(outputEditor, '')
+const clearAll = (): void => {
+  inputEditorRef.value?.setContent('')
+  outputEditorRef.value?.setContent('')
   hasInitialContent.value = false
   message.info('已清空所有内容')
 }
@@ -268,36 +174,9 @@ const clearAll = () => {
 <style lang="scss" scoped>
 .tools-card {
   height: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-:deep(.cm-editor) {
-  height: 100%;
-  font-family: 'Fira Code', monospace;
-  font-size: 14px;
-  padding: 12px;
-
-  &.cm-focused {
-    outline: none;
-  }
-
-  .cm-gutters {
-    background: rgba(255, 255, 255, 0.02);
-    border-right: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .cm-lineNumbers .cm-gutterElement {
-    color: rgba(255, 255, 255, 0.3);
-  }
-}
-
-.n-card-header {
-  padding: 12px 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 </style>

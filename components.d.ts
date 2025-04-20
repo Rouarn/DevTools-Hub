@@ -12,6 +12,7 @@ declare module 'vue' {
     404: typeof import('./src/components/ErrorMessage/404.vue')['default']
     500: typeof import('./src/components/ErrorMessage/500.vue')['default']
     AppProvider: typeof import('./src/components/common/app-provider.vue')['default']
+    CodeEditor: typeof import('./src/components/common/code-editor.vue')['default']
     NButton: typeof import('naive-ui')['NButton']
     NDialogProvider: typeof import('naive-ui')['NDialogProvider']
     NFlex: typeof import('naive-ui')['NFlex']
@@ -28,5 +29,6 @@ declare module 'vue' {
     NWatermark: typeof import('naive-ui')['NWatermark']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    ToolCard: typeof import('./src/components/common/tool-card.vue')['default']
   }
 }

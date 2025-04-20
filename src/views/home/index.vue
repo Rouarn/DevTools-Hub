@@ -1,6 +1,10 @@
 <script lang="ts" setup>
-import { NDivider, NFlex } from 'naive-ui'
+import { NDivider, NFlex, NScrollbar } from 'naive-ui'
 import { reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import ToolCard from '@/components/common/tool-card.vue'
+
+const router = useRouter()
 
 // 定义 source 为 ref 包装的初始值
 const rawSource = ref(0)
@@ -21,6 +25,10 @@ const tools = reactive([
     link: '/jstojson',
   },
 ])
+
+const handleToolClick = (link: string) => {
+  router.push({ path: link, replace: true })
+}
 </script>
 
 <template>
@@ -39,23 +47,14 @@ const tools = reactive([
     >
 
     <NScrollbar x-scrollable>
-      <NFlex
-        inline
-        class="w-full whitespace-nowrap pl-5px overflow-hidden cursor-pointer"
-        :wrap="false"
-      >
-        <div
-          class="tools-card"
+      <NFlex inline class="w-full whitespace-nowrap pl-5px overflow-hidden" :wrap="false">
+        <ToolCard
           v-for="(tool, index) in tools"
           :key="index"
-          @click="() => $router.push(tool.link)"
-        >
-          <div class="c-white text-20px font-bold mt-15px">{{ tool.title }}</div>
-          <div class="c-white text-12px font-100 mt-10px">{{ tool.subTitle }}</div>
-          <NButton class="pos-absolute left-5px bottom-5px c-white text-10px" :bordered="false">
-            立即使用
-          </NButton>
-        </div>
+          v-bind="tool"
+          width="271px"
+          @click="handleToolClick"
+        />
       </NFlex>
     </NScrollbar>
   </NFlex>
